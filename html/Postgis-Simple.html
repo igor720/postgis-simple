@@ -1,0 +1,65 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Postgis.Simple</title><link href="ocean.css" rel="stylesheet" type="text/css" title="Ocean" /><script src="haddock-util.js" type="text/javascript"></script><script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script><script type="text/javascript">//<![CDATA[
+window.onload = function () {pageLoad();setSynopsis("mini_Postgis-Simple.html");};
+//]]>
+</script></head><body><div id="package-header"><ul class="links" id="page-menu"><li><a href="src/Postgis.Simple.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul><p class="caption">postgis-simple-0.1.0.1: Haskell DB driver for PostGIS extention</p></div><div id="content"><div id="module-header"><table class="info"><tr><th>Copyright</th><td>(c) igor720</td></tr><tr><th>License</th><td>MIT</td></tr><tr><th>Maintainer</th><td>igor720@gmail.com</td></tr><tr><th>Stability</th><td>experimental</td></tr><tr><th>Portability</th><td>portable</td></tr><tr><th>Safe Haskell</th><td>None</td></tr><tr><th>Language</th><td>Haskell2010</td></tr></table><p class="caption">Postgis.Simple</p></div><div id="description"><p class="caption">Description</p><div class="doc"><p>Reexports <a href="Postgis-Simple-Internal.html">Postgis.Simple.Internal</a> and <a href="Postgis-Simple-Field-Default.html">Postgis.Simple.Field.Default</a> modules.</p><p>Except for the import of this module and <a href="../postgresql-simple-0.5.2.1/Database-PostgreSQL-Simple.html">Database.PostgreSQL.Simple</a>
+ you may also import <a href="Postgis-Simple-Types-Default.html">Postgis.Simple.Types.Default</a> and plainly use its types.</p><p>If you have some beloved old legacy data types and want to escape type convertions.
+ Then you should manualy create
+ instances of GeoData and Geometry type classes similar to those defined in <a href="Postgis-Simple-Types-Default.html">Postgis.Simple.Types.Default</a>. 
+ Here we will give an example of declarations that can cause your data to work with Postgis. 
+ Let's assume you have polygons in nested lists and your points are latitude-longitude pairs.   </p><pre>type MySRID = Int
+data LatLon = LatLon Double Double deriving Show
+newtype Poly = Poly [[LatLon]] deriving Show -- just use newtype
+</pre><p>Then we will make additional declarations.</p><pre>import Control.Monad
+import Database.PostgreSQL.Simple.ToField
+import Database.PostgreSQL.Simple.FromField
+
+data MyGPoly = MyGPoly (Maybe MySRID) Poly deriving Show
+
+instance GeoData Poly where
+  hasM (Poly _) = False
+  hasZ (Poly _) = False
+  geoType _ = pgisPolygon
+
+instance Geometry MyGPoly where
+    putGeometry (MyGPoly s pg@(Poly rs)) = do
+        putHeader s pg
+        putChainLen $ length rs
+        mapM_ putChain rs
+    getGeometry = do
+        h &lt;- getHeaderPre
+        let geo gt
+              | gt==pgisPolygon         = mkGeom h MyGPoly getPolygon 
+              | otherwise = error $ &quot;geometry type is not yet implemented: &quot;++show gt
+        geo $ lookGeoType h
+
+putChain :: Putter [LatLon]
+putChain r = do
+    putChainLen $ length r
+    mapM_ (\(LatLon y x) -&gt; putPoint (x, y, Nothing, Nothing)) r
+
+getChain :: Getter [LatLon]
+getChain = getChainLen &gt;&gt;= (`replicateM` getPoint) &gt;&gt;= mapM (\(x, y, _, _) -&gt; return $ LatLon y x) 
+
+getPolygon :: Getter Poly 
+getPolygon = skipHeader &gt;&gt; Poly &lt;$&gt; (getChainLen &gt;&gt;= (`replicateM` getChain))
+
+instance ToField MyGPoly where
+    toField = toFieldDefault
+
+instance FromField MyGPoly where
+    fromField = fromFieldDefault
+</pre><p>Your app module may look like following. </p><pre>import Database.PostgreSQL.Simple
+import Postgis.Simple
+
+{..above declarations here or in a separate module..}
+
+main :: IO ()
+main = do
+    conn &lt;- connectPostgreSQL &quot;...&quot;
+    let srid = Just 4326
+        ring = [LatLon 1 2, LatLon 1.5 2.5, LatLon 2.5 3, LatLon 1 2]
+        pl = MyGPoly srid (Poly [ring, ring])
+    _ &lt;- execute conn &quot;INSERT INTO t1 (name, geom) VALUES (?, ?)&quot; (&quot;polygon&quot;::String, pl)
+    a &lt;- query_ conn &quot;select * from t1 LIMIT 1&quot;     :: IO [(String, MyGPoly)]
+    print a
+</pre></div></div><div id="synopsis"><p id="control.syn" class="caption expander" onclick="toggleSection('syn')">Synopsis</p><ul id="section.syn" class="hide" onclick="toggleSection('syn')"><li class="src short">module <a href="Postgis-Simple-Internal.html">Postgis.Simple.Internal</a></li><li class="src short"><a href="#v:toFieldDefault">toFieldDefault</a> :: <a href="Postgis-Simple-Internal.html#t:Geometry">Geometry</a> a =&gt; a -&gt; <a href="../postgresql-simple-0.5.2.1/Database-PostgreSQL-Simple-ToField.html#t:Action">Action</a></li><li class="src short"><a href="#v:fromFieldDefault">fromFieldDefault</a> :: <a href="Postgis-Simple-Internal.html#t:Geometry">Geometry</a> a =&gt; <a href="../postgresql-simple-0.5.2.1/Database-PostgreSQL-Simple-FromField.html#t:FieldParser">FieldParser</a> a</li></ul></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src">module <a href="Postgis-Simple-Internal.html">Postgis.Simple.Internal</a></p></div><div class="top"><p class="src"><a id="v:toFieldDefault" class="def">toFieldDefault</a> :: <a href="Postgis-Simple-Internal.html#t:Geometry">Geometry</a> a =&gt; a -&gt; <a href="../postgresql-simple-0.5.2.1/Database-PostgreSQL-Simple-ToField.html#t:Action">Action</a> <a href="src/Postgis.Simple.Field.Default.html#toFieldDefault" class="link">Source</a> <a href="#v:toFieldDefault" class="selflink">#</a></p><div class="doc"><p>Default toField function</p></div></div><div class="top"><p class="src"><a id="v:fromFieldDefault" class="def">fromFieldDefault</a> :: <a href="Postgis-Simple-Internal.html#t:Geometry">Geometry</a> a =&gt; <a href="../postgresql-simple-0.5.2.1/Database-PostgreSQL-Simple-FromField.html#t:FieldParser">FieldParser</a> a <a href="src/Postgis.Simple.Field.Default.html#fromFieldDefault" class="link">Source</a> <a href="#v:fromFieldDefault" class="selflink">#</a></p><div class="doc"><p>Default fromField function</p></div></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.17.2</p></div></body></html>
