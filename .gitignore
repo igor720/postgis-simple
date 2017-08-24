@@ -1,3 +1,5 @@
+# Haskell
+######################
 dist
 dist-*
 cabal-dev
@@ -15,6 +17,19 @@ cabal.sandbox.config
 *.aux
 *.hp
 *.eventlog
-.stack-work/
 cabal.project.local
 .HTF/
+
+# IDE files
+######################
+.project
+.lkshs
+.lkshw
+.komodoproject
+.dist-buildwrapper/
+.settings/
+
+# Stack
+######################
+stack.yaml
+.stack-work/
