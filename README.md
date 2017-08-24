@@ -7,12 +7,14 @@ This is a almost fully rewritten fork of 'haskell-postgis' package by Peter
 Provides a method that allows direct use of user-defined
 Haskell data with PostGIS databases.
 
-## Default types
+## Synopsis
+
+### Default types
 
 Import of Postgis.Simple, Database.PostgreSQL.Simple,
 Postgis.Simple.Types.Default modules and use default types.
 
-## Specific types
+### Specific types
 
 If you have some beloved old legacy data types and don't want to make type convertions.
 Then you should manualy create instances of GeoData and Geometry type
@@ -88,5 +90,4 @@ main = do
     _ <- execute conn "INSERT INTO t1 (name, geom) VALUES (?, ?)" ("polygon"::String, pl)
     a <- query_ conn "select * from t1 LIMIT 1"     :: IO [(String, MyGPoly)]
     print a
-Synopsis
 ```
