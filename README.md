@@ -7,6 +7,12 @@ This is a almost fully rewritten fork of 'haskell-postgis' package by Peter
 Provides a method that allows direct use of user-defined
 Haskell data with PostGIS databases.
 
+For valid installation don't forget to install libghc-postgresql-libpq-dev
+
+```
+apt install libghc-postgresql-libpq-dev
+```
+
 ## Synopsis
 
 ### Default types
