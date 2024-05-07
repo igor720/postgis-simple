@@ -1,3 +1,6 @@
+**<font color="red">This package is obsolete.</font>**
+See [postgis-trivial](https://github.com/igor720/postgis-trivial).
+
 # postgis-simple
 
 Haskell Postgis DB Driver
